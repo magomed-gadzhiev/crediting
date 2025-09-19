@@ -14,9 +14,9 @@ class LoanRequestsCest
     public function createRequestSuccessfully(FunctionalTester $I): void
     {
         $I->sendPost('/requests', [
-            'user_id' => 1,
-            'amount' => 3000,
-            'term' => 30,
+            'user_id' => rand(1, 1000),
+            'amount' => rand(10, 10000),
+            'term' => rand(1, 365),
         ]);
         $I->seeResponseCodeIs(201);
         $I->seeResponseIsJson();
@@ -37,6 +37,7 @@ class LoanRequestsCest
         $I->seeResponseCodeIs(400);
         $I->seeResponseIsJson();
         $I->seeResponseContainsJson(['result' => false]);
+        $I->dontSeeResponseJsonMatchesJsonPath('$.id');
     }
 
     public function createRequestWhenApprovedExistsShouldFail(FunctionalTester $I): void
@@ -59,5 +60,6 @@ class LoanRequestsCest
         $I->seeResponseCodeIs(400);
         $I->seeResponseIsJson();
         $I->seeResponseContainsJson(['result' => false]);
+        $I->dontSeeResponseJsonMatchesJsonPath('$.id');
     }
 }

@@ -23,4 +23,12 @@ class ProcessorCest
         $I->seeResponseIsJson();
         $I->seeResponseContainsJson(['result' => true]);
     }
+
+    public function triggerProcessorWithoutDelayShouldFail(FunctionalTester $I): void
+    {
+        $I->sendGet('/processor');
+        $I->seeResponseCodeIs(400);
+        $I->seeResponseIsJson();
+        $I->seeResponseContainsJson(['result' => false]);
+    }
 }
