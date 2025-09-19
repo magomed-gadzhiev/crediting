@@ -15,31 +15,39 @@ return [
     'language' => 'en-US',
     'components' => [
         'db' => $db,
+        'cache' => [
+            'class' => 'yii\\caching\\FileCache',
+        ],
         'mailer' => [
             'class' => \yii\symfonymailer\Mailer::class,
             'viewPath' => '@app/mail',
             // send all mails to a file by default.
             'useFileTransport' => true,
-            'messageClass' => 'yii\symfonymailer\Message'
+            'messageClass' => 'yii\\symfonymailer\\Message'
         ],
         'assetManager' => [
             'basePath' => __DIR__ . '/../web/assets',
         ],
         'urlManager' => [
-            'showScriptName' => true,
+            'enablePrettyUrl' => true,
+            'showScriptName' => false,
+            'rules' => [
+                'POST requests' => 'loan/requests',
+                'GET processor' => 'decision/processor',
+            ],
         ],
         'user' => [
-            'identityClass' => 'app\models\User',
+            'identityClass' => 'app\\models\\User',
         ],
         'request' => [
             'cookieValidationKey' => 'test',
             'enableCsrfValidation' => false,
-            // but if you absolutely need it set cookie domain to localhost
-            /*
-            'csrfCookie' => [
-                'domain' => 'localhost',
-            ],
-            */
+        ],
+        'loanService' => [
+            'class' => \app\services\Loan\LoanService::class,
+        ],
+        'decisionService' => [
+            'class' => \app\services\Decision\DecisionService::class,
         ],
     ],
     'params' => $params,
