@@ -26,10 +26,6 @@ class DecisionController extends ApiController
     public function actionProcessor(StartProcessingRequest $command): Response
     {
         $command->load(Yii::$app->request->get(), '');
-        // Map `delay` query param to `delaySeconds` if provided per API contract
-        if ($command->delaySeconds === null && $command->delay !== null) {
-            $command->delaySeconds = (int)$command->delay;
-        }
         if (!$command->validate()) {
             Yii::$app->response->statusCode = 400;
             return $this->asJson(['result' => false]);

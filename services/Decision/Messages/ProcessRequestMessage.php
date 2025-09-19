@@ -13,6 +13,7 @@ class ProcessRequestMessage extends Model implements QueueMessageInterface
 
     public function __construct(int $requestId, int $userId, int $delaySeconds)
     {
+        parent::__construct();
         $this->requestId = $requestId;
         $this->userId = $userId;
         $this->delaySeconds = $delaySeconds;

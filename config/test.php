@@ -42,6 +42,10 @@ return [
         'request' => [
             'cookieValidationKey' => 'test',
             'enableCsrfValidation' => false,
+            // ensure JSON requests are parsed in tests
+            'parsers' => [
+                'application/json' => 'yii\\web\\JsonParser',
+            ],
         ],
         'loanService' => [
             'class' => \app\services\Loan\LoanService::class,

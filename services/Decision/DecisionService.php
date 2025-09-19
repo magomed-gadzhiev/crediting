@@ -4,7 +4,7 @@ namespace app\services\Decision;
 
 use app\models\LoanRequest;
 use app\services\Decision\Models\ProcessRequest;
-use app\services\Decision\Models\StartProcessing;
+use app\services\Decision\Models\StartProcessingRequest;
 use app\services\Decision\Models\StartProcessingResult;
 use app\services\Decision\Messages\ProcessRequestMessage;
 use app\services\Loan\Messages\ApplyDecisionMessage;
@@ -15,7 +15,7 @@ use PhpAmqpLib\Message\AMQPMessage;
 
 class DecisionService implements DecisionServiceInterface
 {
-    public function startProcessing(StartProcessing $command): StartProcessingResult
+    public function startProcessing(StartProcessingRequest $command): StartProcessingResult
     {
         $result = new StartProcessingResult(false);
 
@@ -35,7 +35,7 @@ class DecisionService implements DecisionServiceInterface
         try {
             AmqpFactory::declareTopology($channel);
             foreach ($pending as $loan) {
-                $message = new ProcessRequestMessage((int)$loan->id, (int)$loan->user_id, (int)$command->delaySeconds);
+                $message = new ProcessRequestMessage((int)$loan->id, (int)$loan->user_id, (int)$command->delay);
                 if (!$message->validate()) {
                     continue;
                 }
@@ -75,7 +75,10 @@ class DecisionService implements DecisionServiceInterface
 
         sleep(max(0, $delaySeconds));
 
-        $decision = (mt_rand(1, 100) <= 10) ? LoanRequest::STATUS_APPROVED : LoanRequest::STATUS_DECLINED;
+        $probability = (int)(getenv('APPROVAL_PROBABILITY') !== false ? getenv('APPROVAL_PROBABILITY') : 10);
+        if ($probability < 0) { $probability = 0; }
+        if ($probability > 100) { $probability = 100; }
+        $decision = (mt_rand(1, 100) <= $probability) ? LoanRequest::STATUS_APPROVED : LoanRequest::STATUS_DECLINED;
 
         // publish async apply decision via RabbitMQ
         $connection = AmqpFactory::createConnection();

@@ -3,7 +3,7 @@
 namespace app\services\Decision;
 
 use app\services\Decision\Models\ProcessRequest;
-use app\services\Decision\Models\StartProcessing;
+use app\services\Decision\Models\StartProcessingRequest;
 use app\services\Decision\Models\StartProcessingResult;
 
 interface DecisionServiceInterface
@@ -16,7 +16,7 @@ interface DecisionServiceInterface
     /**
      * Starts processing of all pending loan requests with the given delay.
      */
-    public function startProcessing(StartProcessing $command): StartProcessingResult;
+    public function startProcessing(StartProcessingRequest $command): StartProcessingResult;
 }
 
 

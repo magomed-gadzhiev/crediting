@@ -13,6 +13,7 @@ class SubmitLoanRequestMessage extends Model implements QueueMessageInterface
 
     public function __construct(int $userId, int $amount, int $term)
     {
+        parent::__construct();
         $this->userId = $userId;
         $this->amount = $amount;
         $this->term = $term;

@@ -3,8 +3,8 @@
 namespace app\commands;
 
 use app\services\Loan\LoanServiceInterface;
-use app\services\Loan\Models\SubmitLoanRequest as SubmitLoanRequestModel;
-use app\services\Loan\Models\ApplyDecision as ApplyDecisionModel;
+use app\services\Loan\Models\SubmitLoanRequest;
+use app\services\Loan\Models\ApplyDecision;
 use app\services\Loan\Messages\SubmitLoanRequestMessage;
 use app\services\Loan\Messages\ApplyDecisionMessage;
 use app\services\Messaging\MessageEnvelope;
@@ -52,7 +52,12 @@ class LoanController extends CommandController
             }
             /** @var LoanServiceInterface $loanService */
             $loanService = Yii::$app->get('loanService');
-            $serviceResult = $loanService->submitLoanRequest(new SubmitLoanRequestModel($message->userId, $message->amount, $message->term));
+
+            $submitLoanRequest = new SubmitLoanRequest();
+            $submitLoanRequest->userId = $message->userId;
+            $submitLoanRequest->amount = $message->amount;
+            $submitLoanRequest->term = $message->term;
+            $serviceResult = $loanService->submitLoanRequest($submitLoanRequest);
             $result['result'] = (bool)$serviceResult->result;
             if ($result['result'] && $serviceResult->id !== null) {
                 $result['data'] = ['id' => $serviceResult->id];
@@ -98,7 +103,13 @@ class LoanController extends CommandController
             }
             /** @var LoanServiceInterface $loanService */
             $loanService = Yii::$app->get('loanService');
-            $ok = $loanService->applyDecision(new ApplyDecisionModel($message->requestId, $message->userId, $message->decision));
+
+            $applyDecisionModel = new ApplyDecision();
+            $applyDecisionModel->requestId = $message->requestId;
+            $applyDecisionModel->userId = $message->userId;
+            $applyDecisionModel->decision = $message->decision;
+
+            $ok = $loanService->applyDecision($applyDecisionModel);
             if ($ok->result) {
                 $req->ack();
             } else {

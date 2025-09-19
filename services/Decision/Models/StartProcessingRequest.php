@@ -6,14 +6,12 @@ use yii\base\Model;
 
 class StartProcessingRequest extends Model
 {
-    public ?int $delaySeconds = null;
-    public ?int $delay = null; // alias for request param name
+    public ?int $delay = null;
 
     public function rules(): array
     {
         return [
-            [['delaySeconds'], 'required'],
-            [['delaySeconds'], 'integer', 'min' => 0],
+            [['delay'], 'required'],
             [['delay'], 'integer', 'min' => 0],
         ];
     }

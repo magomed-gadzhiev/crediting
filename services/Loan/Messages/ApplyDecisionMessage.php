@@ -13,6 +13,7 @@ class ApplyDecisionMessage extends Model implements QueueMessageInterface
 
     public function __construct(int $requestId, int $userId, string $decision)
     {
+        parent::__construct();
         $this->requestId = $requestId;
         $this->userId = $userId;
         $this->decision = $decision;

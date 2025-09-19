@@ -19,12 +19,16 @@ $config = [
                 'application/json' => 'yii\web\JsonParser',
             ],
         ],
+        'mutex' => [
+            'class' => \yii\mutex\PgsqlMutex::class,
+        ],
         'cache' => [
             'class' => 'yii\caching\FileCache',
         ],
         'user' => [
             'identityClass' => 'app\models\User',
-            'enableAutoLogin' => true,
+            'enableAutoLogin' => false,
+            'enableSession' => false,
         ],
         'errorHandler' => [
             // use default error handler without routing to a controller action

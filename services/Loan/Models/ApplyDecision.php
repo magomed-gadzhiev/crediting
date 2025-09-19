@@ -10,14 +10,6 @@ class ApplyDecision extends Model
     public int $userId;
     public string $decision;
 
-    public function __construct(int $requestId, int $userId, string $decision)
-    {
-        parent::__construct();
-        $this->requestId = $requestId;
-        $this->userId = $userId;
-        $this->decision = $decision;
-    }
-
     public function rules(): array
     {
         return [
