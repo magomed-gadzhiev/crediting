@@ -92,9 +92,13 @@ Run the installation triggers (creating cookie validation code)
 
     docker-compose run --rm php composer install    
     
-Start the container
+Start the containers
 
     docker-compose up -d
+
+Initialize AMQP topology (one time or idempotent)
+
+    docker-compose run --rm php php yii amqp/init-topology
     
 You can then access the application through the following URL:
 
