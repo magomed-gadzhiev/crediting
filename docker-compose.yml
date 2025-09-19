@@ -39,7 +39,6 @@ services:
   rabbitmq:
     image: rabbitmq:3.12-management-alpine
     environment:
-      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbit disk_free_limit 536870912"
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
     volumes:

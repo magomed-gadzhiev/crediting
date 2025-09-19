@@ -23,17 +23,18 @@ class DecisionController extends ApiController
     }
 
     // GET /processor?delay=5
-    public function actionProcessor(StartProcessingRequest $command): Response
+    public function actionProcessor(): Response
     {
-        $command->load(Yii::$app->request->get(), '');
-        if (!$command->validate()) {
+        $startProcessingRequest = new StartProcessingRequest();
+        $startProcessingRequest->load(Yii::$app->request->get(), '');
+        if (!$startProcessingRequest->validate()) {
             Yii::$app->response->statusCode = 400;
             return $this->asJson(['result' => false]);
         }
 
         /** @var DecisionServiceInterface $decisionService */
         $decisionService = Yii::$app->get('decisionService');
-        $result = $decisionService->startProcessing($command);
+        $result = $decisionService->startProcessing($startProcessingRequest);
 
         return $this->asJson(['result' => (bool)$result->result]);
     }
