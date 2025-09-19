@@ -13,8 +13,8 @@ $config = [
     ],
     'components' => [
         'request' => [
-            // !!! insert a secret key in the following (if it is empty) - this is required by cookie validation
-            'cookieValidationKey' => '',
+            // uses env var if provided; fallback avoids runtime exception in local/dev
+            'cookieValidationKey' => getenv('COOKIE_VALIDATION_KEY') ?: 'local-dev-secret-key',
         ],
         'cache' => [
             'class' => 'yii\caching\FileCache',
@@ -24,7 +24,7 @@ $config = [
             'enableAutoLogin' => true,
         ],
         'errorHandler' => [
-            'errorAction' => 'site/error',
+            // use default error handler without routing to a controller action
         ],
         'mailer' => [
             'class' => \yii\symfonymailer\Mailer::class,
@@ -42,14 +42,20 @@ $config = [
             ],
         ],
         'db' => $db,
-        /*
+        'loanService' => [
+            'class' => \app\services\Loan\LoanService::class,
+        ],
+        'decisionService' => [
+            'class' => \app\services\Decision\DecisionService::class,
+        ],
         'urlManager' => [
             'enablePrettyUrl' => true,
             'showScriptName' => false,
             'rules' => [
+                'POST requests' => 'loan/requests',
+                'GET processor' => 'decision/processor',
             ],
         ],
-        */
     ],
     'params' => $params,
 ];

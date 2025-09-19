@@ -6,7 +6,7 @@ $db = require __DIR__ . '/db.php';
 $config = [
     'id' => 'basic-console',
     'basePath' => dirname(__DIR__),
-    'bootstrap' => ['log'],
+    'bootstrap' => ['log', 'queue'],
     'controllerNamespace' => 'app\commands',
     'aliases' => [
         '@bower' => '@vendor/bower-asset',
@@ -26,6 +26,20 @@ $config = [
             ],
         ],
         'db' => $db,
+        'queue' => [
+            'class' => \yii\queue\amqp_interop\Queue::class,
+            'as log' => \yii\queue\LogBehavior::class,
+            'driver' => \yii\queue\amqp_interop\Queue::ENQUEUE_AMQP_LIB,
+            'dsn' => 'amqp://guest:guest@rabbitmq:5672/%2F',
+            'exchangeName' => 'application.commands',
+            'queueName' => 'application.command.async',
+        ],
+        'loanService' => [
+            'class' => \app\services\Loan\LoanService::class,
+        ],
+        'decisionService' => [
+            'class' => \app\services\Decision\DecisionService::class,
+        ],
     ],
     'params' => $params,
     /*
