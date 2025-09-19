@@ -15,6 +15,9 @@ $config = [
         'request' => [
             // uses env var if provided; fallback avoids runtime exception in local/dev
             'cookieValidationKey' => getenv('COOKIE_VALIDATION_KEY') ?: 'local-dev-secret-key',
+            'parsers' => [
+                'application/json' => 'yii\web\JsonParser',
+            ],
         ],
         'cache' => [
             'class' => 'yii\caching\FileCache',

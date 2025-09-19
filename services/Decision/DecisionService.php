@@ -4,6 +4,9 @@ namespace app\services\Decision;
 
 use app\models\LoanRequest;
 use app\services\Decision\Models\ProcessRequest;
+use app\services\Decision\Models\StartProcessing;
+use app\services\Decision\Models\StartProcessingResult;
+use app\services\Decision\Messages\ProcessRequestMessage;
 use app\services\Loan\Messages\ApplyDecisionMessage;
 use app\services\Messaging\AmqpFactory;
 use app\services\Messaging\AmqpFactoryInterface;
@@ -12,6 +15,54 @@ use PhpAmqpLib\Message\AMQPMessage;
 
 class DecisionService implements DecisionServiceInterface
 {
+    public function startProcessing(StartProcessing $command): StartProcessingResult
+    {
+        $result = new StartProcessingResult(false);
+
+        if (!$command->validate()) {
+            return $result;
+        }
+
+        $pending = LoanRequest::find()->where(['status' => LoanRequest::STATUS_PENDING])->all();
+
+        if (!$pending) {
+            $result->result = true;
+            return $result;
+        }
+
+        $connection = AmqpFactory::createConnection();
+        $channel = $connection->channel();
+        try {
+            AmqpFactory::declareTopology($channel);
+            foreach ($pending as $loan) {
+                $message = new ProcessRequestMessage((int)$loan->id, (int)$loan->user_id, (int)$command->delaySeconds);
+                if (!$message->validate()) {
+                    continue;
+                }
+                $envelope = new MessageEnvelope(
+                    AmqpFactoryInterface::RK_CREDITING_PROCESS_REQUEST,
+                    $message->toArray()
+                );
+                $payload = json_encode($envelope->toArray(), JSON_UNESCAPED_UNICODE);
+                $msg = new AMQPMessage($payload, [
+                    'content_type' => 'application/json',
+                    'delivery_mode' => 2,
+                ]);
+                $channel->basic_publish(
+                    $msg,
+                    AmqpFactoryInterface::EXCHANGE_DECISION_COMMANDS,
+                    AmqpFactoryInterface::RK_CREDITING_PROCESS_REQUEST
+                );
+            }
+            $result->result = true;
+        } finally {
+            try { $channel->close(); } catch (\Throwable $e) {}
+            try { $connection->close(); } catch (\Throwable $e) {}
+        }
+
+        return $result;
+    }
+
     public function processRequest(ProcessRequest $request): void
     {
         $requestId = $request->requestId;

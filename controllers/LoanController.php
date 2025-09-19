@@ -8,7 +8,7 @@ use yii\filters\VerbFilter;
 use yii\web\Controller;
 use yii\web\Response;
 
-class LoanController extends Controller
+class LoanController extends ApiController
 {
     public $enableCsrfValidation = false;
 
@@ -25,22 +25,17 @@ class LoanController extends Controller
     }
 
     // POST /requests
-    public function actionRequests(): Response
+    public function actionRequests(SubmitLoanRequestModel $model): Response
     {
-        Yii::$app->response->format = Response::FORMAT_JSON;
-        $body = json_decode(Yii::$app->request->getRawBody(), true) ?: [];
-        $userId = (int)($body['user_id'] ?? 0);
-        $amount = (int)($body['amount'] ?? 0);
-        $term = (int)($body['term'] ?? 0);
-
-        if ($userId <= 0 || $amount <= 0 || $term <= 0) {
+        $model->load(Yii::$app->request->post(), '');
+        if (!$model->validate()) {
             Yii::$app->response->statusCode = 400;
             return $this->asJson(['result' => false]);
         }
 
         /** @var LoanServiceInterface $loanService */
         $loanService = Yii::$app->get('loanService');
-        $result = $loanService->submitLoanRequest(new SubmitLoanRequestModel($userId, $amount, $term));
+        $result = $loanService->submitLoanRequest($model);
         if (!$result->result || $result->id === null) {
             Yii::$app->response->statusCode = 400;
             return $this->asJson(['result' => false]);

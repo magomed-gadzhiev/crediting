@@ -6,17 +6,9 @@ use yii\base\Model;
 
 class SubmitLoanRequest extends Model
 {
-    public int $userId;
-    public int $amount;
-    public int $term;
-
-    public function __construct(int $userId, int $amount, int $term)
-    {
-        parent::__construct();
-        $this->userId = $userId;
-        $this->amount = $amount;
-        $this->term = $term;
-    }
+    public ?int $userId = null;
+    public ?int $amount = null;
+    public ?int $term = null;
 
     public function rules(): array
     {
