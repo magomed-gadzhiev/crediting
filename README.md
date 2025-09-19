@@ -74,4 +74,4 @@ docker-compose run --rm php vendor/bin/codecept run
 ```
 
 ### Time spent
-- Development and docs: ~Xh (fill if needed)
+- Development and docs: 6h
