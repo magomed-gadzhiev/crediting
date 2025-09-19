@@ -15,7 +15,10 @@ CMD ["php-fpm"]
 FROM yiisoftware/yii2-php:7.4-fpm
 
 RUN set -eux; \
-    docker-php-ext-install sockets
+    apt-get update; \
+    apt-get install -y --no-install-recommends libpq-dev; \
+    docker-php-ext-install sockets pdo pdo_pgsql; \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 

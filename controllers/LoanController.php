@@ -2,10 +2,9 @@
 
 namespace app\controllers;
 use app\services\Loan\LoanServiceInterface;
-use app\services\Loan\Models\SubmitLoanRequest as SubmitLoanRequestModel;
+use app\services\Loan\Models\SubmitLoanRequest;
 use Yii;
 use yii\filters\VerbFilter;
-use yii\web\Controller;
 use yii\web\Response;
 
 class LoanController extends ApiController
@@ -14,28 +13,32 @@ class LoanController extends ApiController
 
     public function behaviors()
     {
-        return [
-            'verbs' => [
-                'class' => VerbFilter::class,
-                'actions' => [
-                    'requests' => ['post'],
-                ],
+        $behaviors = parent::behaviors();
+        $behaviors['verbs'] = [
+            'class' => VerbFilter::class,
+            'actions' => [
+                'requests' => ['POST', 'OPTIONS'],
             ],
         ];
+        return $behaviors;
     }
 
     // POST /requests
-    public function actionRequests(SubmitLoanRequestModel $model): Response
+    public function actionRequests(): Response
     {
-        $model->load(Yii::$app->request->post(), '');
-        if (!$model->validate()) {
+        $submitLoanRequest = new SubmitLoanRequest();
+        $submitLoanRequest->userId = Yii::$app->request->post('user_id');
+        $submitLoanRequest->amount = Yii::$app->request->post('amount');
+        $submitLoanRequest->term = Yii::$app->request->post('term');
+
+        if (!$submitLoanRequest->validate()) {
             Yii::$app->response->statusCode = 400;
             return $this->asJson(['result' => false]);
         }
 
         /** @var LoanServiceInterface $loanService */
         $loanService = Yii::$app->get('loanService');
-        $result = $loanService->submitLoanRequest($model);
+        $result = $loanService->submitLoanRequest($submitLoanRequest);
         if (!$result->result || $result->id === null) {
             Yii::$app->response->statusCode = 400;
             return $this->asJson(['result' => false]);

@@ -18,26 +18,25 @@ class LoanService implements LoanServiceInterface
 
         $tx = Yii::$app->db->beginTransaction(Transaction::SERIALIZABLE);
         try {
-            $userId = $request->userId;
-            $amount = $request->amount;
-            $term = $request->term;
-
-            if ($userId <= 0 || $amount <= 0 || $term <= 0) {
-                throw new \InvalidArgumentException('Validation failed');
-            }
-
+            // Business constraint: a user must not have approved requests
             $hasApproved = (new \yii\db\Query())
                 ->from(LoanRequest::tableName())
-                ->where(['user_id' => $userId, 'status' => LoanRequest::STATUS_APPROVED])
+                ->where(['user_id' => (int)$request->userId, 'status' => LoanRequest::STATUS_APPROVED])
                 ->exists();
             if ($hasApproved) {
-                throw new \DomainException('User already has approved loan');
+                $tx->rollBack();
+
+                // Return unsuccessful result without creating a record
+                $result->result = false;
+                $result->id = null;
+                $result->error = 'User already has approved request';
+                return $result;
             }
 
             $loan = new LoanRequest();
-            $loan->user_id = $userId;
-            $loan->amount = $amount;
-            $loan->term = $term;
+            $loan->user_id = $request->userId;
+            $loan->amount = $request->amount;
+            $loan->term = $request->term;
             $loan->status = LoanRequest::STATUS_PENDING;
             $loan->created_at = time();
             $loan->updated_at = time();
@@ -61,48 +60,65 @@ class LoanService implements LoanServiceInterface
     public function applyDecision(ApplyDecision $command): ApplyDecisionResult
     {
         $result = new ApplyDecisionResult(false);
-        $tx = Yii::$app->db->beginTransaction(Transaction::SERIALIZABLE);
-        try {
-            $requestId = $command->requestId;
-            $userId = $command->userId;
-            $decision = $command->decision;
+        $userId = $command->userId;
+        $lockKey = 'loan.applyDecision.user.' . (string)$userId;
+        $lockAcquired = false;
 
-            $loan = LoanRequest::findOne($requestId);
-            if (!$loan) {
-                throw new \RuntimeException('Loan not found');
+        try {
+            if (Yii::$app->has('mutex')) {
+                // wait up to 30 seconds to acquire lock to avoid dropping messages under contention
+                $lockAcquired = Yii::$app->mutex->acquire($lockKey, 30);
+                if (!$lockAcquired) {
+                    return $result;
+                }
             }
 
-            if (in_array($loan->status, [LoanRequest::STATUS_APPROVED, LoanRequest::STATUS_DECLINED], true)) {
+            $tx = Yii::$app->db->beginTransaction(Transaction::SERIALIZABLE);
+            try {
+                $requestId = $command->requestId;
+                $decision = $command->decision;
+
+                $loan = LoanRequest::findOne($requestId);
+                if (!$loan) {
+                    throw new \RuntimeException('Loan not found');
+                }
+
+                if (in_array($loan->status, [LoanRequest::STATUS_APPROVED, LoanRequest::STATUS_DECLINED], true)) {
+                    $tx->commit();
+                    $result->result = true;
+                    return $result;
+                }
+
+                if ($decision === LoanRequest::STATUS_APPROVED) {
+                    $hasApproved = (new \yii\db\Query())
+                        ->from(LoanRequest::tableName())
+                        ->where(['user_id' => $userId, 'status' => LoanRequest::STATUS_APPROVED])
+                        ->exists();
+                    if ($hasApproved) {
+                        $loan->status = LoanRequest::STATUS_DECLINED;
+                    } else {
+                        $loan->status = LoanRequest::STATUS_APPROVED;
+                    }
+                } else {
+                    $loan->status = LoanRequest::STATUS_DECLINED;
+                }
+                $loan->updated_at = time();
+                if (!$loan->save(false)) {
+                    throw new \RuntimeException('Failed to update');
+                }
                 $tx->commit();
                 $result->result = true;
                 return $result;
-            }
-
-            if ($decision === LoanRequest::STATUS_APPROVED) {
-                $hasApproved = (new \yii\db\Query())
-                    ->from(LoanRequest::tableName())
-                    ->where(['user_id' => $userId, 'status' => LoanRequest::STATUS_APPROVED])
-                    ->exists();
-                if ($hasApproved) {
-                    $loan->status = LoanRequest::STATUS_DECLINED;
-                } else {
-                    $loan->status = LoanRequest::STATUS_APPROVED;
+            } catch (\Throwable $e) {
+                if (isset($tx) && $tx->isActive) {
+                    $tx->rollBack();
                 }
-            } else {
-                $loan->status = LoanRequest::STATUS_DECLINED;
+                return $result;
             }
-            $loan->updated_at = time();
-            if (!$loan->save(false)) {
-                throw new \RuntimeException('Failed to update');
+        } finally {
+            if ($lockAcquired && Yii::$app->has('mutex')) {
+                Yii::$app->mutex->release($lockKey);
             }
-            $tx->commit();
-            $result->result = true;
-            return $result;
-        } catch (\Throwable $e) {
-            if ($tx->isActive) {
-                $tx->rollBack();
-            }
-            return $result;
         }
     }
 }
